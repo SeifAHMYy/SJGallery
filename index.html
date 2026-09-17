@@ -18,6 +18,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+<link rel="dns-prefetch" href="https://res.cloudinary.com">
+<link rel="preconnect" href="https://sjgallery-77a2a-default-rtdb.europe-west1.firebasedatabase.app">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- Leaflet for photo map -->
@@ -26,6 +29,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<!-- HEIC conversion -->
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
 <style>
 :root{
@@ -69,7 +75,12 @@ html.theming *, html.theming *::before, html.theming *::after{
   transition:background-color .55s ease, border-color .55s ease, color .55s ease, fill .55s ease, box-shadow .55s ease !important;
 }
 
-*{box-sizing:border-box;margin:0;padding:0}
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
 [hidden]{display:none!important}
 html,body{height:100%}
 body{
@@ -96,7 +107,7 @@ body::after{
 }
 ::selection{background:var(--ink);color:var(--bg)}
 button,input,textarea{font:inherit;color:inherit}
-button{background:none;border:0;cursor:pointer}
+button{background:none;border:0;cursor:pointer;outline:none}
 img{display:block;max-width:100%}
 
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -125,8 +136,6 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,
 .btn-ghost:hover{color:var(--ink);border-color:var(--line-3);background:var(--surface)}
 .btn-soft{color:var(--ink);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-1)}
 .btn-soft:hover{background:var(--lift);border-color:var(--line-2)}
-.btn-danger{color:#b03030;border:1px solid rgba(176,48,48,.24);background:transparent}
-.btn-danger:hover{background:rgba(176,48,48,.08);border-color:rgba(176,48,48,.5)}
 .btn .spinner{display:inline-block;width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);border-top-color:currentColor;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -250,6 +259,12 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,
   border:2px solid var(--bg);
 }
 .icon-btn .badge.dot{min-width:9px;height:9px;padding:0;font-size:0}
+.user-chip{
+  padding:9px 16px;border-radius:var(--r-full);
+  background:var(--surface);border:1px solid var(--line);
+  font-size:12.5px;font-weight:500;color:var(--ink-2);
+  box-shadow:var(--shadow-1);
+}
 
 .hero{padding:clamp(40px,5vw,72px) clamp(20px,4vw,52px) 32px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .hero-text{max-width:600px}
@@ -423,8 +438,6 @@ html[data-theme="dark"] .lb-map-wrap iframe{filter:invert(.92) hue-rotate(180deg
 .lb-loc-input:focus{border-color:var(--ink);background:var(--lift)}
 .lb-loc-btns{display:flex;justify-content:flex-end;gap:8px}
 
-.lb-actions{margin-top:28px;display:flex;gap:8px}
-
 @media (max-width:880px){
   .lb-panel{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;height:92vh}
   .lb-media{padding:12px}
@@ -514,9 +527,6 @@ html[data-theme="dark"] .lb-map-wrap iframe{filter:invert(.92) hue-rotate(180deg
 .comment-author{font-size:12.5px;font-weight:500;color:var(--ink)}
 .comment-time{font-size:10.5px;color:var(--ink-3)}
 .comment-text{font-size:13px;line-height:1.55;color:var(--ink-2);word-break:break-word}
-.comment-delete{font-size:11px;color:var(--ink-3);padding:2px 6px;border-radius:6px;opacity:0;transition:.2s var(--ease)}
-.comment-item:hover .comment-delete{opacity:1}
-.comment-delete:hover{color:var(--accent);background:var(--accent-soft)}
 .comment-input-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-full);background:var(--surface-2);border:1px solid var(--line);transition:.25s var(--ease)}
 .comment-input-row:focus-within{background:var(--lift);border-color:var(--line-2)}
 .comment-input{flex:1;border:0;outline:0;background:transparent;font-size:13px;color:var(--ink);padding:4px 0}
@@ -644,9 +654,7 @@ html[data-theme="dark"] .lb-map-wrap iframe{filter:invert(.92) hue-rotate(180deg
   .tl-icon{width:32px;height:32px;font-size:14px}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PHOTO MAP
-   ══════════════════════════════════════════════════════════════ */
+/* PHOTO MAP */
 .map-wrapper{position:relative;flex:1;min-height:0;overflow:hidden}
 #photo-map{width:100%;height:100%;background:var(--surface-3)}
 .leaflet-container{background:var(--surface-3)!important;font-family:inherit!important;outline:none!important}
@@ -719,9 +727,7 @@ html[data-theme="dark"] .map-marker-pin{border-color:#1a1514}
 .map-empty h3{font-family:'Fraunces',serif;font-weight:300;font-size:22px;color:var(--ink);letter-spacing:-.02em}
 .map-empty p{font-size:13.5px;color:var(--ink-3);max-width:36ch;line-height:1.65;background:var(--surface);padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--line)}
 
-/* ══════════════════════════════════════════════════════════════
-   NOTES
-   ══════════════════════════════════════════════════════════════ */
+/* NOTES */
 .notes-header{
   padding:clamp(30px,4.5vw,56px) clamp(20px,4vw,52px) 22px;
   display:flex;flex-direction:column;gap:14px;
@@ -786,7 +792,6 @@ html[data-theme="dark"] .map-marker-pin{border-color:#1a1514}
   transition:.2s var(--ease);
 }
 .note-card-actions button:hover{background:var(--lift);color:var(--ink);border-color:var(--line-2)}
-.note-card-actions button.danger:hover{color:#b03030;border-color:rgba(176,48,48,.4);background:rgba(176,48,48,.06)}
 .notes-empty{
   grid-column:1/-1;text-align:center;padding:60px 24px;
   display:flex;flex-direction:column;align-items:center;gap:14px;
@@ -869,9 +874,6 @@ html[data-theme="dark"] .map-marker-pin{border-color:#1a1514}
 .collection-item img{width:100%;height:auto;display:block;transition:transform .7s var(--ease)}
 .collection-item:hover img{transform:scale(1.04)}
 .collection-item-type{position:absolute;top:10px;left:10px;padding:4px 9px;border-radius:var(--r-full);background:rgba(255,255,255,.9);backdrop-filter:blur(10px);font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#1a1614}
-.collection-item-remove{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(20,8,16,.75);color:#fff;font-size:14px;line-height:1;opacity:0;transition:.25s var(--ease)}
-.collection-item:hover .collection-item-remove{opacity:1}
-.collection-item-remove:hover{background:var(--accent)}
 .collection-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:80px 24px}
 .collection-empty .empty-mark{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:24px;color:var(--ink-3);border:1px dashed var(--line-2)}
 .collection-empty h3{font-family:'Fraunces',serif;font-weight:300;font-size:22px;letter-spacing:-.02em}
@@ -1120,9 +1122,7 @@ html[data-theme="dark"] .cord-line{background:linear-gradient(to bottom, rgba(25
 html[data-theme="dark"] .cord-knob{color:var(--gold);box-shadow:0 0 0 1px rgba(216,179,120,.18), var(--shadow-1)}
 html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rgba(216,179,120,.55), var(--shadow-2)}
 
-/* ══════════════════════════════════════════════════════════════
-   CONNECTED MEMORIES (lightbox)
-   ══════════════════════════════════════════════════════════════ */
+/* CONNECTED MEMORIES (lightbox) */
 .lb-conn{margin-top:28px;display:flex;flex-direction:column;gap:22px}
 .lb-conn-block{display:flex;flex-direction:column;gap:10px}
 .lb-conn-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -1141,17 +1141,33 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
 .lb-conn-item.txt .lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);text-align:center;padding:0 4px;line-height:1.25}
 .lb-conn-tallies{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3)}
 .lb-conn-tallies b{color:var(--ink);font-weight:600;font-family:'Fraunces',serif;font-size:14px;margin-right:3px}
-.lb-conn-empty{font-size:12px;color:var(--ink-3);font-style:italic}
-.lb-next{margin-top:28px}
-.lb-next-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
-.lb-next-strip::-webkit-scrollbar{display:none}
-.lb-next-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--r-full);background:var(--ink);color:var(--bg);font-size:12px;font-weight:600;letter-spacing:.02em;transition:.2s var(--ease);margin-bottom:10px}
-.lb-next-btn:hover{filter:brightness(1.3)}
-.lb-next-btn svg{width:13px;height:13px}
 
-/* ══════════════════════════════════════════════════════════════
-   MEMORY COMBOS
-   ══════════════════════════════════════════════════════════════ */
+.lb-next{margin-top:28px;display:flex;flex-direction:column;gap:10px}
+.lb-next-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.lb-next-strip::-webkit-scrollbar{display:none}
+.lb-next-cta{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;
+  padding:16px 20px;
+  border-radius:var(--r-md);
+  background:linear-gradient(135deg, var(--ink) 0%, var(--accent-2) 160%);
+  color:var(--bg);
+  font-size:13.5px;font-weight:500;letter-spacing:.005em;
+  transition:.25s var(--ease);
+  text-align:left;
+  box-shadow:0 12px 28px -14px rgba(26,22,20,.5);
+}
+.lb-next-cta:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 18px 36px -16px rgba(26,22,20,.55)}
+.lb-next-cta:active{transform:translateY(0)}
+.lb-next-cta .label{display:flex;align-items:center;gap:11px;min-width:0}
+.lb-next-cta .ico{font-size:18px;flex:none;line-height:1}
+.lb-next-cta .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lb-next-cta .txt small{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.62;font-weight:600}
+.lb-next-cta .txt strong{font-weight:500;font-size:13.5px;letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-next-cta .arrow{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14)}
+.lb-next-cta .arrow svg{width:11px;height:11px}
+
+/* MEMORY COMBOS */
 .combos-wrap{padding:8px clamp(20px,4vw,52px) 26px;border-bottom:1px solid var(--line)}
 .combos-row{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}
 .combos-row::-webkit-scrollbar{display:none}
@@ -1278,6 +1294,12 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
       <span class="brand-inline-label">Gallery</span>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="photomap-btn-top" type="button" aria-label="Photo map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s-8-6.5-8-12a8 8 0 1 1 16 0c0 5.5-8 12-8 12z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </button>
       <button class="icon-btn" id="notif-btn" type="button" aria-label="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -1295,12 +1317,6 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
       <p class="hero-sub" id="photo-count">Nothing here yet.</p>
     </div>
     <div class="hero-actions">
-      <button class="btn btn-ghost" id="btn-photomap" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">
-          <path d="M12 22s-8-6.5-8-12a8 8 0 1 1 16 0c0 5.5-8 12-8 12z"/><circle cx="12" cy="10" r="3"/>
-        </svg>
-        <span>Photo map</span>
-      </button>
       <button class="btn btn-ghost" id="btn-onthisday" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">
           <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
@@ -1327,8 +1343,8 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
     <h3>Your gallery is empty</h3>
     <p>Drop photos or videos anywhere on this page, or tap "Add photos &amp; videos" above to begin.</p>
   </div>
-  <input type="file" id="file-input" accept="image/*,video/*" multiple hidden>
-  <input type="file" id="story-file-input" accept="image/*" multiple hidden>
+  <input type="file" id="file-input" accept="image/*,video/*,.heic,.heif,image/heic,image/heif" multiple hidden>
+  <input type="file" id="story-file-input" accept="image/*,.heic,.heif,image/heic,image/heif" multiple hidden>
 </section>
 
 <!-- FEED -->
@@ -1396,7 +1412,7 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
     <h3>No reels yet</h3>
     <p>Tap "New reel" to bring a moment to life.</p>
   </div>
-  <input type="file" id="feed-image-input" accept="image/*" hidden>
+  <input type="file" id="feed-image-input" accept="image/*,.heic,.heif,image/heic,image/heif" hidden>
   <input type="file" id="reel-video-input" accept="video/*" hidden>
 </section>
 
@@ -1538,7 +1554,7 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
     </div>
   </div>
   <div class="notes-grid" id="notes-grid"></div>
-  <input type="file" id="note-photo-input" accept="image/*" hidden>
+  <input type="file" id="note-photo-input" accept="image/*,.heic,.heif,image/heic,image/heif" hidden>
 </section>
 
 <!-- ON THIS DAY -->
@@ -1685,7 +1701,7 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
     </section>
   </div>
 
-  <input type="file" id="profile-avatar-input" accept="image/*" hidden>
+  <input type="file" id="profile-avatar-input" accept="image/*,.heic,.heif,image/heic,image/heif" hidden>
 </section>
 
 <!-- NOTIFICATIONS -->
@@ -1737,7 +1753,6 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
       <div class="lb-place" id="lb-place"></div>
       <div class="lb-conn" id="lb-conn" hidden></div>
       <div class="lb-next" id="lb-next-block" hidden></div>
-      <div class="lb-actions"><button class="btn btn-danger" id="lb-delete" type="button" style="padding:11px 18px;font-size:12.5px">Delete</button></div>
     </aside>
   </div>
 </div>
@@ -1772,8 +1787,6 @@ html[data-theme="dark"] .light-cord:hover .cord-knob{box-shadow:0 0 22px -4px rg
     <div class="sv-menu-popup" id="sv-menu-popup">
       <button data-act="rename" type="button">Rename story</button>
       <button data-act="add-slide" type="button">Add photo</button>
-      <button data-act="delete-slide" type="button">Delete this slide</button>
-      <button data-act="delete-story" class="danger" type="button">Delete story</button>
     </div>
   </div>
 </div>
@@ -2005,6 +2018,27 @@ const ROAST = "You are neither Seif nor Jana — so kindly piss off.";
 const SLIDE_MS = 5000;
 const EMOJI_SET = ['📸','❤️','✨','🌊','🍕','🎬','🌅','🎵','🐾','🌸','🏖️','🎉','🍰','🌙','⭐','🔥','💫','🌿','🐚','🎨','🖤','🌹','🍷','☕'];
 
+/* ══════════════════════════════════════════════════════════════
+   CDN URL OPTIMIZATION
+   ══════════════════════════════════════════════════════════════ */
+function urlHasTransform(url){
+  const m = url.match(/\/(?:image|video)\/upload\/([^/]+)\//);
+  if(!m) return false;
+  return !/^v\d+$/.test(m[1]);
+}
+function imgUrl(url, w){
+  if(!url) return url;
+  if(!url.includes('/image/upload/')) return url;
+  if(urlHasTransform(url)) return url;
+  return url.replace('/image/upload/', `/image/upload/q_auto:good,f_auto,w_${w},c_limit,dpr_auto/`);
+}
+function vidUrl(url, w){
+  if(!url) return url;
+  if(!url.includes('/video/upload/')) return url;
+  if(urlHasTransform(url)) return url;
+  return url.replace('/video/upload/', `/video/upload/q_auto:good,w_${w||960},c_limit/`);
+}
+
 /* Cairo-only locations */
 const CITY_COORDS = {
   "Masr El Gdeda":[30.0876,31.3320], "Heliopolis":[30.0876,31.3320],
@@ -2101,8 +2135,7 @@ const storiesRow=$("stories-row"), storyViewer=$("story-viewer"), svProgress=$("
   svTime=$("sv-time"), svAdd=$("sv-add"), svMenuBtn=$("sv-menu"), svMenuPopup=$("sv-menu-popup"),
   storyFileInput=$("story-file-input");
 const lightbox=$("lightbox"), lbImg=$("lb-img"), lbVideo=$("lb-video"), lbTitle=$("lb-title"),
-  lbKicker=$("lb-kicker"), lbOwner=$("lb-owner"), lbRows=$("lb-rows"), lbPlace=$("lb-place"),
-  lbDelete=$("lb-delete");
+  lbKicker=$("lb-kicker"), lbOwner=$("lb-owner"), lbRows=$("lb-rows"), lbPlace=$("lb-place");
 const welcome=$("welcome"), welcomeName=$("welcome-name"), toasts=$("toasts");
 const feedUserChip=$("feed-user-chip"), composerInput=$("composer-input"), composerAvatar=$("composer-avatar"),
   composerPreview=$("composer-preview"), composerPreviewImg=$("composer-preview-img"),
@@ -2189,6 +2222,12 @@ let pendingNoteFile=null, pendingNoteUrl=null, pendingNoteExistingUrl=null, pend
 let combosCache=[];
 let activeComboIdx=null;
 
+/* Perf caches */
+let memVersion = 0;
+let _memVersion = -1, _memCache = null;
+let _analyticsTimer = null, _comboTimer = null;
+let _gridSig = "";
+
 /* Helpers */
 const round=(n,d=1)=>Math.round(n*10**d)/10**d;
 function formatDuration(sec){
@@ -2211,6 +2250,13 @@ function timeAgo(ts){
 function dateInputValue(d){
   const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const dd=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${dd}`;
+}
+function bestTimestamp(obj){
+  if(obj?.meta?.takenAt){
+    const t = new Date(obj.meta.takenAt).getTime();
+    if(!isNaN(t)) return t;
+  }
+  return obj?.createdAtClient || 0;
 }
 function showScreen(name){
   Object.entries(screens).forEach(([k,el])=>el.classList.toggle("active",k===name));
@@ -2273,9 +2319,10 @@ const currentUid=()=>auth.currentUser?.uid||null;
 function avatarUrlFor(uid){ return profilesCache[uid]?.avatarUrl || null; }
 function displayNameFor(uid, fallback){ return profilesCache[uid]?.displayName || fallback || "someone"; }
 function renderAvatarInto(el, uid, fallbackName){
-  const url = avatarUrlFor(uid);
+  const raw = avatarUrlFor(uid);
+  const url = raw ? imgUrl(raw, 96) : null;
   const initial = (displayNameFor(uid, fallbackName) || "?")[0].toUpperCase();
-  if (url) el.innerHTML = `<img src="${url}" alt="">`;
+  if (url) el.innerHTML = `<img src="${url}" alt="" loading="lazy" decoding="async">`;
   else { el.innerHTML = ""; el.textContent = initial; }
 }
 
@@ -2313,6 +2360,25 @@ function gpsToDecimal(arr, ref){
   return d;
 }
 
+async function prepareImageFile(file){
+  const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || /\.(heic|heif)$/i.test(file.name);
+  if(!isHeic) return file;
+  if(!window.heic2any){
+    toast("HEIC support still loading — try again in a moment.","error");
+    return null;
+  }
+  try{
+    const result = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    return new File([blob], newName, { type: 'image/jpeg' });
+  }catch(e){
+    console.error('HEIC conversion failed', e);
+    toast("Couldn't convert that HEIC file.","error");
+    return null;
+  }
+}
+
 function uploadToCloudinary(file,onProgress,resourceType="image"){
   const url=`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/${resourceType}/upload`;
   const form=new FormData();
@@ -2337,10 +2403,10 @@ function uploadToCloudinary(file,onProgress,resourceType="image"){
     xhr.send(form);
   });
 }
-function reelThumb(videoUrl,w=600,h=750){
+function reelThumb(videoUrl,w=500,h=625){
   if(!videoUrl)return null;
   return videoUrl
-    .replace('/video/upload/',`/video/upload/so_0,w_${w},h_${h},c_fill,q_auto:eco/`)
+    .replace('/video/upload/',`/video/upload/so_0,w_${w},h_${h},c_fill,q_auto:good,f_auto/`)
     .replace(/\.(mp4|mov|webm|m4v|mkv|avi)$/i,'.jpg');
 }
 
@@ -2440,8 +2506,9 @@ onAuthStateChanged(auth,(user)=>{
     unlocked=false;
     stopGallery();stopStories();stopFeed();stopReels();stopCollections();stopProfiles();stopNotifications();stopFirsts();stopNotes();
     photosCache=[];storiesCache=[];postsCache=[];reelsCache=[];collectionsCache=[];notificationsCache=[];firstsCache={};
-    combosCache=[];
+    combosCache=[];memVersion++;
     grid.innerHTML="";postsList.innerHTML="";feedReelsView.innerHTML="";
+    _gridSig="";
     renderStoriesRow();renderFeed();renderReels();renderCollections();renderCombos();
     showScreen("auth");
   }
@@ -2539,7 +2606,7 @@ function startProfiles(){
   profilesCb=(snap)=>{
     profilesCache=snap.val()||{};
     refreshIdentityUI();
-    renderGrid();renderFeed();renderReels();renderStoriesRow();
+    renderFeed();renderReels();renderStoriesRow();
     if(screens.profile.classList.contains("active"))renderProfile();
     if(screens.notes.classList.contains("active"))renderNotes();
     if(lightbox.classList.contains("open")){
@@ -2578,9 +2645,12 @@ function refreshIdentityUI(){
 }
 profileAvatarEdit.addEventListener("click",()=>profileAvatarInput.click());
 profileAvatarInput.addEventListener("change",async()=>{
-  const file=profileAvatarInput.files[0];profileAvatarInput.value="";
+  let file=profileAvatarInput.files[0];profileAvatarInput.value="";
   if(!file||!file.type.startsWith("image/"))return;
   if(!auth.currentUser)return;
+  const converted = await prepareImageFile(file);
+  if(!converted) return;
+  file = converted;
   const t=toast("Uploading photo…","progress",true);
   try{
     const cloud=await uploadToCloudinary(file,(p)=>t.update(p),"image");
@@ -2629,6 +2699,17 @@ function renderProfile(){
   computeAnalytics();
   renderBadges();
 }
+
+/* Debounced entry point used by data listeners */
+function scheduleAnalytics(){
+  if(_analyticsTimer) clearTimeout(_analyticsTimer);
+  _analyticsTimer = setTimeout(() => { _analyticsTimer=null; computeAnalytics(); }, 250);
+}
+function scheduleCombos(){
+  if(_comboTimer) clearTimeout(_comboTimer);
+  _comboTimer = setTimeout(() => { _comboTimer=null; computeCombos(); }, 400);
+}
+
 function computeAnalytics(){
   const totalPhotos=photosCache.filter(p=>p.type!=="video").length;
   const totalVideos=photosCache.filter(p=>p.type==="video").length;
@@ -2673,7 +2754,7 @@ function computeAnalytics(){
   collectionsCache.forEach(c=>scanText(c.name+" "+(c.description||"")));
   analyticsCache={totalPhotos,totalVideos,totalPosts,totalReels,totalStories,totalCollections,counts,perUserUploads,totalUploads,locations};
   renderAnalytics();
-  computeCombos();
+  scheduleCombos();
 }
 function renderAnalytics(){
   if(!analyticsCache)return;
@@ -2956,8 +3037,9 @@ function startGallery(){
     const v=snap.val()||{};
     photosCache=Object.entries(v).map(([id,d])=>({id,...d}))
       .sort((a,b)=>(b.createdAtClient||0)-(a.createdAtClient||0));
+    memVersion++;
     renderGrid();
-    computeAnalytics();
+    scheduleAnalytics();
     if (onThisDayActive) renderOnThisDay();
     if (screens.photomap.classList.contains("active")) renderPhotoMap();
   };
@@ -2968,30 +3050,46 @@ function stopGallery(){
   photosRef=null;photosCb=null;
 }
 function renderGrid(){
-  grid.innerHTML="";
+  const sig = photosCache.length + '|' + (photosCache[0]?.id||'') + '|' + (photosCache[photosCache.length-1]?.id||'');
+  if(sig === _gridSig) return;
+  _gridSig = sig;
+
   const n=photosCache.length;
   photoCount.textContent=n===0?"Nothing here yet.":`${n} ${n===1?"memory":"memories"} · kept in confidence`;
   emptyState.hidden=n>0;
-  photosCache.forEach((p,i)=>{
+
+  if(!n){ grid.innerHTML=""; return; }
+
+  const html = photosCache.map((p,i)=>{
     const isVideo=p.type==="video";
-    const thumb=isVideo?(p.thumbUrl||reelThumb(p.url)):(p.url);
-    const t=document.createElement("article");
-    t.className="tile";
-    t.style.animationDelay=Math.min(i*40,400)+"ms";
-    t.innerHTML=`
+    const thumb = isVideo
+      ? (p.thumbUrl || reelThumb(p.url, 500, 625))
+      : imgUrl(p.url, 500);
+    const capTs = bestTimestamp(p);
+    const capLabel = capTs ? formatDate(capTs) : "";
+    const delay = Math.min(i*30, 300);
+    return `<article class="tile" data-id="${p.id}" style="animation-delay:${delay}ms">
       <div class="tile-media">
-        <img src="${thumb}" alt="${escapeHtml(p.title||(isVideo?"Video":"Photograph"))}" loading="lazy" decoding="async">
+        <img src="${thumb}" alt="" loading="lazy" decoding="async">
         ${isVideo?`<span class="tile-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>`:""}
         ${isVideo&&p.duration?`<span class="tile-dur">${escapeHtml(formatDuration(p.duration))}</span>`:""}
       </div>
       <div class="tile-caption">
-        <span class="tile-title">${escapeHtml(p.title||"Untitled")}</span>
-        <span class="tile-meta">${escapeHtml(formatDate(p.createdAtClient))}</span>
-      </div>`;
-    t.addEventListener("click",()=>openLightbox(p.id));
-    grid.appendChild(t);
-  });
+        <span class="tile-title">${escapeHtml(capLabel||(isVideo?"Video":"Photograph"))}</span>
+        <span class="tile-meta">${isVideo?"Video":"Photo"}</span>
+      </div>
+    </article>`;
+  }).join("");
+  grid.innerHTML = html;
 }
+
+/* Event delegation for the grid — only bound once */
+grid.addEventListener("click", (e) => {
+  const tile = e.target.closest(".tile");
+  if(!tile) return;
+  const id = tile.dataset.id;
+  if(id) openLightbox(id);
+});
 
 $("btn-upload").addEventListener("click",()=>fileInput.click());
 fileInput.addEventListener("change",()=>{handleFiles([...fileInput.files]);fileInput.value="";});
@@ -3007,24 +3105,29 @@ galleryScreen.addEventListener("drop",(e)=>{
 });
 
 async function handleFiles(files){
-  const media=files.filter(f=>f.type.startsWith("image/")||f.type.startsWith("video/"));
+  const media=files.filter(f=>f.type.startsWith("image/")||f.type.startsWith("video/")||/\.(heic|heif)$/i.test(f.name));
   if(!media.length){toast("Those aren't photos or videos.","error");return;}
   if(!auth.currentUser)return;
   const t=toast(`Uploading ${media.length}…`,"progress",true);
   let done=0;
-  for(const f of media){
+  for(const original of media){
+    let f = original;
     const isVideo=f.type.startsWith("video/");
     try{
-      const title=f.name.replace(/\.[^.]+$/,"").replace(/[-_]+/g," ").trim()||"Untitled";
+      if(!isVideo){
+        const converted = await prepareImageFile(f);
+        if(!converted) continue;
+        f = converted;
+      }
       const meta=isVideo?await buildVideoMetadata(f):await buildMetadata(f);
       const cloud=await uploadToCloudinary(f,(p)=>t.update(p*0.9),isVideo?"video":"image");
       const url=cloud.secure_url;
-      const thumb=isVideo?reelThumb(url):url;
+      const thumb=isVideo?reelThumb(url,500,625):url;
       let location=null;
       if(meta.gps && isFinite(meta.gps.lat) && isFinite(meta.gps.lon)){
         location={lat:meta.gps.lat,lon:meta.gps.lon,name:null,source:"exif"};
       }else{
-        const d=detectLocationFromText(title+" "+f.name);
+        const d=detectLocationFromText(" "+f.name);
         if(d) location={name:d.name,lat:d.lat,lon:d.lon,source:"text"};
       }
       const ref=push(dbRef(rtdb,"photos"));
@@ -3035,7 +3138,7 @@ async function handleFiles(files){
         height:cloud.height||meta.height||null,
         duration:isVideo?(cloud.duration||meta.duration||null):null,
         ownerUid:auth.currentUser.uid, ownerName:whoIsUser(),
-        title, location, createdAtClient:Date.now(), meta
+        title:"", location, createdAtClient:Date.now(), meta
       });
       done++;t.update(done/media.length);
     }catch(err){console.error(err);toast("Upload failed: "+(err?.message||"unknown"),"error");}
@@ -3148,14 +3251,8 @@ function parseTiff(dv,tiff){
 function formatExif(exif){
   const m={};
   if(exif.Make||exif.Model)m.camera=[exif.Make,exif.Model].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
-  if(exif.LensModel)m.lens=exif.LensModel;
   const raw=exif.DateTimeOriginal||exif.DateTimeDigitized||exif.DateTime;
   if(raw)m.takenAt=parseExifDate(raw);
-  if(exif.ISO)m.iso=`ISO ${exif.ISO}`;
-  if(exif.FNumber)m.aperture=`ƒ/${round(exif.FNumber,1)}`;
-  if(exif.ExposureTime)m.shutter=exif.ExposureTime>=1?`${round(exif.ExposureTime,2)}s`:`1/${Math.round(1/exif.ExposureTime)}s`;
-  if(exif.FocalLength)m.focalLength=`${Math.round(exif.FocalLength)}mm`;
-  if(exif.Software)m.software=exif.Software;
   if(exif.GPSLatitude&&exif.GPSLongitude){
     const lat=gpsToDecimal(exif.GPSLatitude,exif.GPSLatitudeRef);
     const lon=gpsToDecimal(exif.GPSLongitude,exif.GPSLongitudeRef);
@@ -3170,20 +3267,19 @@ function parseExifDate(s){
   return isNaN(d)?null:d.toISOString();
 }
 
-/* ══════════════════════════════════════════════════════════════
-   CONNECTED MEMORIES helpers
-   ══════════════════════════════════════════════════════════════ */
-function allMemoryItems(){
+/* CONNECTED MEMORIES helpers */
+function buildAllMemoryItems(){
   const items=[];
   photosCache.forEach(p=>{
     const isVideo=p.type==="video";
+    const ts = bestTimestamp(p);
     const locName = p.location?.name || (detectLocationFromText(p.title||"")?.name) || null;
     items.push({
       kind: isVideo ? "video" : "photo",
       id: p.id,
-      ts: p.createdAtClient || 0,
+      ts,
       title: p.title || (isVideo ? "Video" : "Photograph"),
-      thumb: isVideo ? (p.thumbUrl || reelThumb(p.url)) : p.url,
+      thumb: isVideo ? (p.thumbUrl || reelThumb(p.url, 200, 250)) : imgUrl(p.url, 200),
       locName,
       loc: p.location || null,
       ownerUid: p.ownerUid,
@@ -3195,7 +3291,7 @@ function allMemoryItems(){
     items.push({
       kind:"post", id:p.id, ts:p.createdAtClient||0,
       title:p.text||"Post",
-      thumb:p.imageUrl||null,
+      thumb:p.imageUrl ? imgUrl(p.imageUrl, 200) : null,
       locName: detectLocationFromText(p.text||"")?.name || null,
       loc:null,
       ownerUid:p.ownerUid, ownerName:p.ownerName,
@@ -3213,7 +3309,7 @@ function allMemoryItems(){
     items.push({
       kind:"reel", id:r.id, ts:r.createdAtClient||0,
       title:r.caption||"Reel",
-      thumb:reelThumb(r.videoUrl),
+      thumb:reelThumb(r.videoUrl, 200, 250),
       locName: detectLocationFromText(r.caption||"")?.name || null,
       loc:null,
       ownerUid:r.ownerUid, ownerName:r.ownerName,
@@ -3225,7 +3321,7 @@ function allMemoryItems(){
     items.push({
       kind:"story", id:s.id, ts:s.createdAtClient||0,
       title:s.title||"Story",
-      thumb:slide?.url||null,
+      thumb:slide?.url ? imgUrl(slide.url, 200) : null,
       locName: detectLocationFromText(s.title||"")?.name || null,
       loc:null,
       ownerUid:s.ownerUid, ownerName:s.ownerName,
@@ -3234,6 +3330,12 @@ function allMemoryItems(){
   });
   items.sort((a,b)=>a.ts-b.ts);
   return items;
+}
+function allMemoryItems(){
+  if(_memVersion === memVersion && _memCache) return _memCache;
+  _memVersion = memVersion;
+  _memCache = buildAllMemoryItems();
+  return _memCache;
 }
 
 const KIND_LABEL = {photo:"Photo", video:"Video", post:"Post", reel:"Reel", story:"Story"};
@@ -3244,7 +3346,7 @@ function stripItemHTML(it, isCurrent){
   const tagCls = it.kind === "post" ? "post" : it.kind === "reel" ? "reel" : "";
   if(it.thumb){
     return `<div class="lb-conn-item${isCurrent ? " current" : ""}" data-conn-key="${it.kind}:${it.id}" title="${escapeHtml(it.title)}">
-      <img src="${it.thumb}" alt="" loading="lazy">
+      <img src="${it.thumb}" alt="" loading="lazy" decoding="async">
       <span class="tag ${tagCls}">${tag}</span>
     </div>`;
   }
@@ -3293,19 +3395,17 @@ function renderConnectedMemories(p){
   const nextBlock = $("lb-next-block");
   if(!el) return;
 
-  const curTs = p.createdAtClient || Date.now();
+  const curTs = bestTimestamp(p);
   const curKind = p.type === "video" ? "video" : "photo";
   const curKey = curKind + ":" + p.id;
   const all = allMemoryItems();
 
-  // SAME DAY
   const dayStart = new Date(curTs); dayStart.setHours(0,0,0,0);
   const dayStartTs = dayStart.getTime();
   const dayEndTs = dayStartTs + 86400000;
   const sameDay = all.filter(i => i.ts >= dayStartTs && i.ts < dayEndTs);
   const dayOthers = sameDay.filter(i => (i.kind + ":" + i.id) !== curKey);
 
-  // SAME PLACE
   const loc = p.location;
   const locName = loc?.name || (detectLocationFromText(p.title||"")?.name) || null;
   let samePlaceItems = [];
@@ -3320,7 +3420,6 @@ function renderConnectedMemories(p){
     });
   }
 
-  // AROUND THIS TIME (±24h)
   const aroundStart = curTs - 86400000;
   const aroundEnd = curTs + 86400000;
   const aroundItems = all.filter(i =>
@@ -3378,7 +3477,6 @@ function renderConnectedMemories(p){
     el.innerHTML = "";
   }
 
-  // WHAT HAPPENED NEXT
   if(nextBlock){
     const laterItems = all.filter(i => i.ts > curTs && i.ts <= curTs + 86400000).slice(0, 12);
     if(laterItems.length){
@@ -3389,13 +3487,21 @@ function renderConnectedMemories(p){
           <span class="lb-conn-title">What happened next</span>
           <span class="lb-conn-count">within 24h</span>
         </div>
-        <button class="lb-next-btn" id="lb-next-go" type="button">
-          <span>Next · ${escapeHtml(nextItemLabel(first))}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
         <div class="lb-next-strip">
           ${laterItems.map(i => stripItemHTML(i, false)).join("")}
-        </div>`;
+        </div>
+        <button class="lb-next-cta" id="lb-next-go" type="button">
+          <span class="label">
+            <span class="ico">${KIND_ICON[first.kind]||"✦"}</span>
+            <span class="txt">
+              <small>Continue · next up</small>
+              <strong>${escapeHtml(nextItemLabel(first))}</strong>
+            </span>
+          </span>
+          <span class="arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </button>`;
       const goBtn = nextBlock.querySelector("#lb-next-go");
       if(goBtn){
         goBtn.addEventListener("click", () => {
@@ -3416,9 +3522,7 @@ function renderConnectedMemories(p){
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   MEMORY COMBOS
-   ══════════════════════════════════════════════════════════════ */
+/* MEMORY COMBOS */
 function comboDayLocation(day){
   const counts={};
   day.items.forEach(it=>{
@@ -3427,7 +3531,6 @@ function comboDayLocation(day){
   let best=null;
   for(const [n,c] of Object.entries(counts)) if(!best || c>best.c) best={n,c};
   if(!best) return null;
-  // dominant location must make up a meaningful share of the day
   const threshold = Math.max(2, Math.ceil(day.items.length * 0.35));
   return best.c >= threshold ? best.n : null;
 }
@@ -3436,7 +3539,6 @@ function computeCombos(){
   const all = allMemoryItems();
   if(!all.length){ combosCache = []; renderCombos(); return; }
 
-  // group by local day
   const dayMap = new Map();
   all.forEach(it=>{
     if(!it.ts) return;
@@ -3448,9 +3550,9 @@ function computeCombos(){
   const days = [...dayMap.values()].sort((a,b)=>a.start-b.start);
   days.forEach(d=>{ d.loc = comboDayLocation(d); });
 
-  const MIN_DAY = 6;          // "active day" threshold
-  const MIN_TOTAL = 10;       // combo threshold
-  const MAX_GAP_DAYS = 1;     // allow 1 quiet day between active days
+  const MIN_DAY = 6;
+  const MIN_TOTAL = 10;
+  const MAX_GAP_DAYS = 1;
 
   const raw = [];
   let cur = null;
@@ -3541,10 +3643,10 @@ function renderCombos(){
   wrap.hidden = false;
   row.innerHTML = combosCache.slice(0,12).map((c,i)=>{
     const stats = comboStatLine(c.counts);
-    const strip = c.items.filter(x=>x.thumb).slice(0,6).map(x=>`<img src="${x.thumb}" alt="" loading="lazy">`).join("");
+    const strip = c.items.filter(x=>x.thumb).slice(0,6).map(x=>`<img src="${x.thumb}" alt="" loading="lazy" decoding="async">`).join("");
     return `<div class="combo-card" data-combo-idx="${i}">
       <div class="combo-cover">
-        ${c.cover ? `<img src="${c.cover}" alt="">` : `<div class="combo-cover-empty">✦</div>`}
+        ${c.cover ? `<img src="${c.cover}" alt="" loading="lazy" decoding="async">` : `<div class="combo-cover-empty">✦</div>`}
         <div class="combo-cover-info">
           <div class="combo-cover-title">${escapeHtml(c.title)}</div>
           ${c.loc ? `<div class="combo-cover-loc">📍 ${escapeHtml(c.loc)}</div>` : ""}
@@ -3589,7 +3691,6 @@ function renderComboTimeline(c){
     body.innerHTML = `<div class="timeline-empty"><div class="empty-mark">✦</div><h3>Nothing here</h3></div>`;
     return;
   }
-  // group by day
   const groups = new Map();
   items.forEach(it=>{
     const d = new Date(it.ts); d.setHours(0,0,0,0);
@@ -3609,7 +3710,7 @@ function renderComboTimeline(c){
         <div class="tl-item clickable" data-combo-item="${it.kind}:${it.id}" style="animation-delay:${Math.min(i*30,300)}ms">
           <div class="tl-time">${escapeHtml(time)}<small>${ampm}</small></div>
           <div class="tl-icon">${KIND_ICON[it.kind]||"✦"}</div>
-          ${it.thumb ? `<div class="tl-thumb"><img src="${it.thumb}" alt="" loading="lazy"></div>` : ""}
+          ${it.thumb ? `<div class="tl-thumb"><img src="${it.thumb}" alt="" loading="lazy" decoding="async"></div>` : ""}
           <div class="tl-body">
             <div class="tl-type">${escapeHtml(KIND_LABEL[it.kind]||"Item")}</div>
             <div class="tl-title">${escapeHtml(it.title||"")}</div>
@@ -3645,22 +3746,24 @@ function openLightbox(id){
   lbVideo.hidden=!isVideo;
   if(isVideo){
     lbImg.removeAttribute("src");
-    lbVideo.src=p.url;
-    lbVideo.poster=p.thumbUrl||reelThumb(p.url)||"";
+    lbVideo.src=vidUrl(p.url, 1080);
+    lbVideo.poster=p.thumbUrl||reelThumb(p.url, 600, 750)||"";
     try{const pp=lbVideo.play();if(pp&&pp.catch)pp.catch(()=>{});}catch{}
   }else{
     try{lbVideo.pause();}catch{}
     lbVideo.removeAttribute("src");
-    lbImg.src=p.url;
-    lbImg.alt=p.title||"Photograph";
+    lbImg.src=imgUrl(p.url, 1600);
+    lbImg.alt="";
   }
   lbKicker.textContent=isVideo?"Film":"Photograph";
-  lbTitle.textContent=p.title||"Untitled";
+  const ts = bestTimestamp(p);
+  lbTitle.textContent = ts
+    ? new Date(ts).toLocaleString(undefined,{day:"numeric",month:"long",year:"numeric",hour:"numeric",minute:"2-digit"})
+    : (isVideo ? "Video" : "Photograph");
   renderLightboxOwner(p);
   renderLightboxMeta(p);
   renderPlaceBlock(p);
   renderConnectedMemories(p);
-  lbDelete.hidden=p.ownerUid!==currentUid();
   const multi=photosCache.length>1;
   $("lb-prev").style.display=multi?"":"none";
   $("lb-next").style.display=multi?"":"none";
@@ -3691,10 +3794,11 @@ $("lb-next").addEventListener("click",(e)=>{e.stopPropagation();step(1);});
 function renderLightboxOwner(p){
   const uid=p.ownerUid;
   const name=displayNameFor(uid,p.ownerName||"someone");
-  const url=avatarUrlFor(uid);
+  const raw=avatarUrlFor(uid);
+  const url=raw?imgUrl(raw,96):null;
   const initial=(name||"?")[0].toUpperCase();
   lbOwner.innerHTML=`
-    <div class="lb-owner-avatar">${url?`<img src="${url}" alt="">`:escapeHtml(initial)}</div>
+    <div class="lb-owner-avatar">${url?`<img src="${url}" alt="" loading="lazy" decoding="async">`:escapeHtml(initial)}</div>
     <div>
       <div class="lb-owner-label">Added by</div>
       <div class="lb-owner-name">${escapeHtml(name)}</div>
@@ -3704,14 +3808,9 @@ function renderLightboxMeta(p){
   const m=p.meta||{};
   const rows=[];
   const push=(k,v)=>{if(v!==undefined&&v!==null&&v!=="")rows.push([k,v]);};
-  const stamp = m.takenAt || p.createdAtClient;
+  const stamp = bestTimestamp(p);
   push("Timestamp", stamp ? new Date(stamp).toLocaleString() : "");
-  push("Camera", m.camera);
-  push("Lens", m.lens);
-  push("Aperture", m.aperture);
-  push("Shutter", m.shutter);
-  push("ISO", m.iso);
-  push("Focal length", m.focalLength);
+  push("Device", m.camera);
   if(p.type==="video" && p.duration) push("Duration", formatDuration(p.duration));
   lbRows.innerHTML=rows.length
     ? rows.map(([k,v])=>`
@@ -3779,6 +3878,7 @@ function showLocationEditor(photoId){
         location:{name:found.name,lat:found.lat,lon:found.lon,source:"manual"}
       });
       p.location={name:found.name,lat:found.lat,lon:found.lon,source:"manual"};
+      memVersion++;
       renderPlaceBlock(p);
       renderConnectedMemories(p);
       if(screens.photomap.classList.contains("active")) renderPhotoMap();
@@ -3788,13 +3888,6 @@ function showLocationEditor(photoId){
   lbPlace.querySelector('[data-act="save"]').addEventListener("click",save);
   input.addEventListener("keydown",(e)=>{if(e.key==="Enter"){e.preventDefault();save();}});
 }
-lbDelete.addEventListener("click",async()=>{
-  const id=lightbox.dataset.activeId;
-  const p=photosCache.find(x=>x.id===id);if(!p)return;
-  if(!confirm("Delete this item?"))return;
-  try{await remove(dbRef(rtdb,"photos/"+id));closeLightbox();toast("Deleted","success");}
-  catch(err){toast("Couldn't delete: "+err.message,"error");}
-});
 
 /* STORIES */
 function startStories(){
@@ -3803,9 +3896,10 @@ function startStories(){
   storiesCb=(snap)=>{
     const v=snap.val()||{};
     storiesCache=Object.entries(v).map(([id,d])=>({id,...d}));
+    memVersion++;
     sortStories();renderStoriesRow();
     if(activeStoryId)refreshActiveStoryView();
-    computeAnalytics();
+    scheduleAnalytics();
     if (onThisDayActive) renderOnThisDay();
   };
   onValue(storiesRef,storiesCb,(err)=>toast("Couldn't load stories: "+err.message,"error"));
@@ -3840,7 +3934,8 @@ function renderStoriesRow(){
   storiesRow.appendChild(add);
   storiesCache.forEach(s=>{
     const slides=storySlides(s);
-    const cover=slides[0]?.url;
+    const rawCover=slides[0]?.url;
+    const cover=rawCover?imgUrl(rawCover,160):null;
     const unseen=isStoryUnseen(s);
     const tile=document.createElement("button");
     tile.className="story-tile"+(unseen?" unseen":"");
@@ -3848,7 +3943,7 @@ function renderStoriesRow(){
     tile.innerHTML=`
       <span class="story-ring">
         <span class="story-ring-inner">
-          <span class="story-avatar">${cover?`<img src="${cover}" alt="">`:""}</span>
+          <span class="story-avatar">${cover?`<img src="${cover}" alt="" loading="lazy" decoding="async">`:""}</span>
         </span>
       </span>
       <span class="story-name">${escapeHtml(s.title||"Story")}</span>`;
@@ -3894,7 +3989,7 @@ function renderSlide(){
   renderProgressBars(slides.length);
   if(!slides.length){svImg.removeAttribute("src");svEmpty.hidden=false;stopSlideTimer();return;}
   svEmpty.hidden=true;
-  svImg.src=slides[activeSlideIdx].url;
+  svImg.src=imgUrl(slides[activeSlideIdx].url, 1000);
   startSlideTimer();
 }
 function renderProgressBars(count){
@@ -3951,8 +4046,15 @@ function handleAddStoryClick(){
   });
 }
 storyFileInput.addEventListener("change",async()=>{
-  const files=[...storyFileInput.files].filter(f=>f.type.startsWith("image/"));
+  let files=[...storyFileInput.files].filter(f=>f.type.startsWith("image/")||/\.(heic|heif)$/i.test(f.name));
   storyFileInput.value="";
+  if(!files.length){storyFileMode=null;pendingNewTitle=null;return;}
+  const converted=[];
+  for(const f of files){
+    const c = await prepareImageFile(f);
+    if(c) converted.push(c);
+  }
+  files = converted;
   if(!files.length){storyFileMode=null;pendingNewTitle=null;return;}
   if(storyFileMode==="new")await createNewStoryWithFiles(files,pendingNewTitle||"Untitled");
   else if(storyFileMode==="append"&&activeStoryId)await appendSlidesToStory(activeStoryId,files);
@@ -4000,22 +4102,10 @@ async function renameStory(id,title){
   try{await update(dbRef(rtdb,"stories/"+id),{title:title||"Untitled",updatedAt:Date.now(),["viewedBy/"+currentUid()]:Date.now()});toast("Story renamed","success");}
   catch(err){toast("Rename failed: "+err.message,"error");}
 }
-async function deleteSlide(id,slideId){
-  const s=storiesCache.find(x=>x.id===id);if(!s||s.ownerUid!==currentUid())return;
-  const slides=storySlides(s);
-  if(slides.length<=1){if(confirm("This is the last slide. Delete the whole story?"))await deleteStory(id);return;}
-  try{
-    await remove(dbRef(rtdb,`stories/${id}/slides/${slideId}`));
-    await update(dbRef(rtdb,"stories/"+id),{updatedAt:Date.now(),["viewedBy/"+currentUid()]:Date.now()});
-    if(activeSlideIdx>0)activeSlideIdx--;
-    toast("Slide removed","success");
-  }catch(err){toast("Couldn't remove slide: "+err.message,"error");}
-}
 async function deleteStory(id,silent=false){
-  const s=storiesCache.find(x=>x.id===id);if(!s||s.ownerUid!==currentUid())return;
-  if(!silent&&!confirm("Delete this entire story?"))return;
-  try{await remove(dbRef(rtdb,"stories/"+id));if(activeStoryId===id)closeStory();toast("Story deleted","success");}
-  catch(err){toast("Delete failed: "+err.message,"error");}
+  const s=storiesCache.find(x=>x.id===id);if(!s)return;
+  if(!silent) return;
+  try{await remove(dbRef(rtdb,"stories/"+id));if(activeStoryId===id)closeStory();}catch{}
 }
 function showStoryMenu(){svMenuPopup.classList.add("open");}
 function hideStoryMenu(){svMenuPopup.classList.remove("open");}
@@ -4038,10 +4128,6 @@ svMenuPopup.addEventListener("click",async(e)=>{
     openStoryModal({title:"Rename story",sub:"What should this story be called?",defaultValue:s.title||"",placeholder:"Story name",confirmLabel:"Save",
       onConfirm:(v)=>renameStory(activeStoryId,(v||"").trim()||"Untitled")});
   }else if(act==="add-slide"){storyFileMode="append";storyFileInput.click();}
-  else if(act==="delete-slide"){
-    const slides=storySlides(s);
-    const sl=slides[activeSlideIdx];if(sl)deleteSlide(activeStoryId,sl.id);
-  }else if(act==="delete-story"){deleteStory(activeStoryId);}
 });
 function openStoryModal({title,sub,defaultValue="",placeholder="",confirmLabel="Confirm",onConfirm}){
   smTitle.textContent=title;smSub.textContent=sub||"";
@@ -4066,7 +4152,8 @@ function startFeed(){
     const v=snap.val()||{};
     postsCache=Object.entries(v).map(([id,d])=>({id,...d}))
       .sort((a,b)=>(b.createdAtClient||0)-(a.createdAtClient||0));
-    renderFeed();computeAnalytics();
+    memVersion++;
+    renderFeed();scheduleAnalytics();
     if (onThisDayActive) renderOnThisDay();
   };
   onValue(postsRef,postsCb,(err)=>toast("Couldn't load feed: "+err.message,"error"));
@@ -4089,17 +4176,19 @@ function renderFeed(){
     const comments=post.comments||{};
     const cl=Object.entries(comments).map(([id,c])=>({id,...c})).sort((a,b)=>(a.createdAtClient||0)-(b.createdAtClient||0));
     const initial=(post.ownerName||"?")[0].toUpperCase();
-    const ownerAvatar = avatarUrlFor(post.ownerUid);
+    const rawAv = avatarUrlFor(post.ownerUid);
+    const ownerAvatar = rawAv ? imgUrl(rawAv, 96) : null;
+    const postImg = post.imageUrl ? imgUrl(post.imageUrl, 800) : null;
     card.innerHTML=`
       <header class="post-head">
-        <div class="post-avatar">${ownerAvatar?`<img src="${ownerAvatar}" alt="">`:escapeHtml(initial)}</div>
+        <div class="post-avatar">${ownerAvatar?`<img src="${ownerAvatar}" alt="" loading="lazy" decoding="async">`:escapeHtml(initial)}</div>
         <div class="post-head-info">
           <div class="post-author">${escapeHtml(displayNameFor(post.ownerUid,post.ownerName||"someone"))}</div>
           <div class="post-time">${escapeHtml(timeAgo(post.createdAtClient))}</div>
         </div>
       </header>
       ${post.text?`<div class="post-text">${escapeHtml(post.text)}</div>`:""}
-      ${post.imageUrl?`<div class="post-image"><img src="${post.imageUrl}" alt="" loading="lazy"></div>`:""}
+      ${postImg?`<div class="post-image"><img src="${postImg}" alt="" loading="lazy" decoding="async"></div>`:""}
       <div class="post-actions">
         <button class="post-action like ${liked?"liked":""}" data-act="like" type="button">
           <svg viewBox="0 0 24 24" fill="${liked?"currentColor":"none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
@@ -4115,16 +4204,15 @@ function renderFeed(){
         <div class="comments-list">
           ${cl.length===0?`<div class="comments-empty">No comments yet — say something sweet.</div>`:cl.map(c=>{
             const ci=(c.ownerName||"?")[0].toUpperCase();
-            const canDel=c.ownerUid===me||post.ownerUid===me;
-            const cAvatar=avatarUrlFor(c.ownerUid);
+            const rawCav = avatarUrlFor(c.ownerUid);
+            const cAvatar = rawCav ? imgUrl(rawCav, 96) : null;
             return`
               <div class="comment-item" data-comment-id="${c.id}">
-                <div class="comment-avatar">${cAvatar?`<img src="${cAvatar}" alt="">`:escapeHtml(ci)}</div>
+                <div class="comment-avatar">${cAvatar?`<img src="${cAvatar}" alt="" loading="lazy" decoding="async">`:escapeHtml(ci)}</div>
                 <div class="comment-body">
                   <div class="comment-head">
                     <span class="comment-author">${escapeHtml(displayNameFor(c.ownerUid,c.ownerName||"someone"))}</span>
                     <span class="comment-time">${escapeHtml(timeAgo(c.createdAtClient))}</span>
-                    ${canDel?`<button class="comment-delete" data-act="delete-comment" type="button">Delete</button>`:""}
                   </div>
                   <div class="comment-text">${escapeHtml(c.text)}</div>
                 </div>
@@ -4152,10 +4240,6 @@ postsList.addEventListener("click",async(e)=>{
     const inp=card.querySelector(".comment-input");
     const txt=(inp.value||"").trim();if(!txt)return;
     inp.value="";await addComment(id,txt);
-  }else if(act==="delete-comment"){
-    const item=e.target.closest(".comment-item");
-    const cid=item?.dataset.commentId;
-    if(cid)await deleteComment(id,cid);
   }
 });
 postsList.addEventListener("keydown",(e)=>{
@@ -4188,10 +4272,6 @@ async function addComment(id,text){
     });
   }catch(err){toast("Couldn't comment: "+err.message,"error");}
 }
-async function deleteComment(postId,commentId){
-  try{await remove(dbRef(rtdb,`posts/${postId}/comments/${commentId}`));}
-  catch(err){toast("Couldn't delete: "+err.message,"error");}
-}
 async function addPostToStory(post){
   if(!post.imageUrl){toast("Only posts with photos can go to a story.","error");return;}
   openStoryModal({
@@ -4214,9 +4294,13 @@ async function addPostToStory(post){
 }
 composerInput.addEventListener("input",()=>{composerPost.disabled=!composerInput.value.trim()&&!pendingComposerFile;});
 composerAttach.addEventListener("click",()=>feedImageInput.click());
-feedImageInput.addEventListener("change",()=>{
-  const f=feedImageInput.files[0];feedImageInput.value="";
-  if(!f||!f.type.startsWith("image/"))return;
+feedImageInput.addEventListener("change",async()=>{
+  let f=feedImageInput.files[0];feedImageInput.value="";
+  if(!f)return;
+  if(!f.type.startsWith("image/") && !/\.(heic|heif)$/i.test(f.name))return;
+  const converted = await prepareImageFile(f);
+  if(!converted) return;
+  f = converted;
   pendingComposerFile=f;
   if(pendingComposerUrl)URL.revokeObjectURL(pendingComposerUrl);
   pendingComposerUrl=URL.createObjectURL(f);
@@ -4264,7 +4348,8 @@ function startReels(){
     const v=snap.val()||{};
     reelsCache=Object.entries(v).map(([id,d])=>({id,...d}))
       .sort((a,b)=>(b.createdAtClient||0)-(a.createdAtClient||0));
-    renderReels();computeAnalytics();
+    memVersion++;
+    renderReels();scheduleAnalytics();
     if (onThisDayActive) renderOnThisDay();
   };
   onValue(reelsRef,reelsCb,(err)=>toast("Couldn't load reels: "+err.message,"error"));
@@ -4311,14 +4396,16 @@ function renderReels(){
     const likeCount=Object.keys(likes).length;
     const commentCount=Object.keys(reel.comments||{}).length;
     const initial=(reel.ownerName||"?")[0].toUpperCase();
-    const ownerAvatar=avatarUrlFor(reel.ownerUid);
+    const rawAv=avatarUrlFor(reel.ownerUid);
+    const ownerAvatar=rawAv?imgUrl(rawAv,96):null;
     const ownerName=displayNameFor(reel.ownerUid,reel.ownerName||"someone");
+    const vSrc = vidUrl(reel.videoUrl, 720);
     const article=document.createElement("article");
     article.className="reel";
     article.dataset.reelId=reel.id;
     article.innerHTML=`
       <div class="reel-shell">
-        <video class="reel-video" src="${reel.videoUrl}" muted playsinline loop preload="metadata" webkit-playsinline></video>
+        <video class="reel-video" src="${vSrc}" muted playsinline loop preload="metadata" webkit-playsinline></video>
         <div class="reel-topbar">
           <span class="reel-chip"><span class="dot"></span>Reel</span>
           <button class="reel-mute" data-act="mute" type="button" aria-label="Toggle sound">
@@ -4348,7 +4435,7 @@ function renderReels(){
         </div>
         <div class="reel-bottom">
           <div class="reel-author-row">
-            <div class="reel-avatar">${ownerAvatar?`<img src="${ownerAvatar}" alt="">`:escapeHtml(initial)}</div>
+            <div class="reel-avatar">${ownerAvatar?`<img src="${ownerAvatar}" alt="" loading="lazy" decoding="async">`:escapeHtml(initial)}</div>
             <div>
               <div class="reel-author-name">${escapeHtml(ownerName)} <span class="reel-time">· ${escapeHtml(timeAgo(reel.createdAtClient))}</span></div>
             </div>
@@ -4488,34 +4575,26 @@ rsSend.addEventListener("click",async()=>{
 });
 rsInput.addEventListener("keydown",(e)=>{if(e.key==="Enter"){e.preventDefault();rsSend.click();}});
 function renderReelCommentSheet(reel){
-  const me=currentUid();
   const cl=Object.entries(reel.comments||{}).map(([id,c])=>({id,...c})).sort((a,b)=>(a.createdAtClient||0)-(b.createdAtClient||0));
   rsCount.textContent=cl.length?`(${cl.length})`:"";
   if(!cl.length){rsComments.innerHTML=`<div class="rs-empty">No comments yet — be the first.</div>`;return;}
   rsComments.innerHTML=cl.map(c=>{
     const ci=(c.ownerName||"?")[0].toUpperCase();
-    const canDel=c.ownerUid===me||reel.ownerUid===me;
-    const cAvatar=avatarUrlFor(c.ownerUid);
+    const rawCav=avatarUrlFor(c.ownerUid);
+    const cAvatar=rawCav?imgUrl(rawCav,96):null;
     return`
       <div class="comment-item" data-comment-id="${c.id}">
-        <div class="comment-avatar">${cAvatar?`<img src="${cAvatar}" alt="">`:escapeHtml(ci)}</div>
+        <div class="comment-avatar">${cAvatar?`<img src="${cAvatar}" alt="" loading="lazy" decoding="async">`:escapeHtml(ci)}</div>
         <div class="comment-body">
           <div class="comment-head">
             <span class="comment-author">${escapeHtml(displayNameFor(c.ownerUid,c.ownerName||"someone"))}</span>
             <span class="comment-time">${escapeHtml(timeAgo(c.createdAtClient))}</span>
-            ${canDel?`<button class="comment-delete" data-act="delete" type="button">Delete</button>`:""}
           </div>
           <div class="comment-text">${escapeHtml(c.text)}</div>
         </div>
       </div>`;
   }).join("");
 }
-rsComments.addEventListener("click",async(e)=>{
-  const btn=e.target.closest('[data-act="delete"]');if(!btn||!activeReelCommentId)return;
-  const item=e.target.closest(".comment-item");
-  const cid=item?.dataset.commentId;
-  if(cid)await deleteReelComment(activeReelCommentId,cid);
-});
 async function addReelComment(id,text){
   const me=auth.currentUser;if(!me)return;
   try{
@@ -4526,10 +4605,6 @@ async function addReelComment(id,text){
       actorUid:me.uid,actorName:whoIsUser(),targetType:"reel",targetId:id
     });
   }catch(err){toast("Couldn't comment: "+err.message,"error");}
-}
-async function deleteReelComment(reelId,commentId){
-  try{await remove(dbRef(rtdb,`reels/${reelId}/comments/${commentId}`));}
-  catch(err){toast("Couldn't delete: "+err.message,"error");}
 }
 feedModeSwitch.addEventListener("click",(e)=>{
   const b=e.target.closest("[data-feed-mode]");if(!b)return;
@@ -4634,9 +4709,9 @@ function showLocationSheet(group){
   const sorted = [...group.photos].sort((a,b) => (b.createdAtClient||0) - (a.createdAtClient||0));
   mapSheetGrid.innerHTML = sorted.map(p => {
     const isVideo = p.type === "video";
-    const thumb = isVideo ? (p.thumbUrl || reelThumb(p.url)) : p.url;
+    const thumb = isVideo ? (p.thumbUrl || reelThumb(p.url, 200, 250)) : imgUrl(p.url, 200);
     return `<div class="mthumb" data-photo-id="${p.id}">
-      <img src="${thumb}" alt="" loading="lazy">
+      <img src="${thumb}" alt="" loading="lazy" decoding="async">
       ${isVideo ? `<span class="vtag">Video</span>` : ""}
     </div>`;
   }).join("");
@@ -4651,7 +4726,7 @@ function showLocationSheet(group){
 function closeLocationSheet(){ mapSheet.classList.remove("open"); }
 mapSheetClose.addEventListener("click", closeLocationSheet);
 photomapCloseBtn.addEventListener("click", () => showScreen("gallery"));
-$("btn-photomap").addEventListener("click", () => {
+$("photomap-btn-top").addEventListener("click", () => {
   showScreen("photomap");
   initPhotoMap();
   setTimeout(() => { if(photoMap){ photoMap.invalidateSize(); renderPhotoMap(); } }, 120);
@@ -4715,15 +4790,16 @@ function renderOnThisDay(){
   onthisdaySub.textContent = `${dateLabel} · ${relativeLabel(start)}`;
   const items = [];
   photosCache.forEach(p => {
-    if (p.createdAtClient >= start && p.createdAtClient < end) {
+    const ts = bestTimestamp(p);
+    if (ts >= start && ts < end) {
       const isVideo = p.type === "video";
       items.push({
         type: isVideo ? "video" : "photo",
         icon: isVideo ? "🎞️" : "📸",
         label: isVideo ? "Video" : "Photo",
-        ts: p.createdAtClient,
+        ts,
         title: p.title || (isVideo ? "Video" : "Photograph"),
-        thumb: isVideo ? (p.thumbUrl || reelThumb(p.url)) : p.url,
+        thumb: isVideo ? (p.thumbUrl || reelThumb(p.url, 200, 250)) : imgUrl(p.url, 200),
         author: displayNameFor(p.ownerUid, p.ownerName),
         onClick: () => openLightbox(p.id),
       });
@@ -4733,7 +4809,7 @@ function renderOnThisDay(){
     if (p.createdAtClient >= start && p.createdAtClient < end) {
       items.push({
         type: "post", icon: "📝", label: "Post", ts: p.createdAtClient,
-        title: p.text || "Post", thumb: p.imageUrl || null,
+        title: p.text || "Post", thumb: p.imageUrl ? imgUrl(p.imageUrl, 200) : null,
         author: displayNameFor(p.ownerUid, p.ownerName), onClick: null,
       });
     }
@@ -4742,7 +4818,7 @@ function renderOnThisDay(){
     if (r.createdAtClient >= start && r.createdAtClient < end) {
       items.push({
         type: "reel", icon: "🎥", label: "Reel", ts: r.createdAtClient,
-        title: r.caption || "Reel", thumb: reelThumb(r.videoUrl),
+        title: r.caption || "Reel", thumb: reelThumb(r.videoUrl, 200, 250),
         author: displayNameFor(r.ownerUid, r.ownerName),
         onClick: () => goToReel(r.id),
       });
@@ -4753,7 +4829,7 @@ function renderOnThisDay(){
       const slide = storySlides(s)[0];
       items.push({
         type: "story", icon: "⏳", label: "Story", ts: s.createdAtClient,
-        title: s.title || "Story", thumb: slide?.url || null,
+        title: s.title || "Story", thumb: slide?.url ? imgUrl(slide.url, 200) : null,
         author: displayNameFor(s.ownerUid, s.ownerName),
         onClick: () => openStory(s.id),
       });
@@ -4777,7 +4853,7 @@ function renderOnThisDay(){
       <div class="tl-item ${it.onClick ? "clickable" : ""}" data-idx="${i}" style="animation-delay:${Math.min(i*30,300)}ms">
         <div class="tl-time">${escapeHtml(time)}<small>${ampm}</small></div>
         <div class="tl-icon">${it.icon}</div>
-        ${it.thumb ? `<div class="tl-thumb"><img src="${it.thumb}" alt="" loading="lazy"></div>` : ""}
+        ${it.thumb ? `<div class="tl-thumb"><img src="${it.thumb}" alt="" loading="lazy" decoding="async"></div>` : ""}
         <div class="tl-body">
           <div class="tl-type">${escapeHtml(it.label)}</div>
           <div class="tl-title">${escapeHtml(it.title)}</div>
@@ -4823,7 +4899,7 @@ function startCollections(){
     });
     renderCollections();
     if(activeCollectionId)refreshActiveCollectionView();
-    computeAnalytics();
+    scheduleAnalytics();
   };
   onValue(collectionsRef,collectionsCb,(err)=>toast("Couldn't load collections: "+err.message,"error"));
 }
@@ -4847,11 +4923,12 @@ function renderCollections(){
     card.className="collection-card"+(sortMode?" reordering":"");
     card.style.animationDelay=Math.min(i*45,400)+"ms";
     card.dataset.collectionId=c.id;
-    const cover=collectionCoverUrl(c);
+    const rawCover=collectionCoverUrl(c);
+    const cover=rawCover?imgUrl(rawCover,500):null;
     const count=collectionItemCount(c);
     card.innerHTML=`
       <div class="collection-cover">
-        ${cover?`<img src="${cover}" alt="">`:`<div class="collection-cover-empty">✦</div>`}
+        ${cover?`<img src="${cover}" alt="" loading="lazy" decoding="async">`:`<div class="collection-cover-empty">✦</div>`}
         <div class="collection-emoji">${escapeHtml(c.emoji||"📸")}</div>
         <div class="collection-overlay">
           <div class="collection-name">${escapeHtml(c.name||"Untitled")}</div>
@@ -4923,9 +5000,10 @@ function refreshActiveCollectionView(){
 function renderCollectionDetail(){
   const c=collectionsCache.find(x=>x.id===activeCollectionId);if(!c)return;
   const items=Object.entries(c.items||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
-  const cover=collectionCoverUrl(c);
+  const rawCover=collectionCoverUrl(c);
+  const cover=rawCover?imgUrl(rawCover,1400):null;
   const isOwner=c.ownerUid===currentUid();
-  collectionHeroMedia.innerHTML=cover?`<img src="${cover}" alt="">`:`<div class="collection-hero-empty">✦</div>`;
+  collectionHeroMedia.innerHTML=cover?`<img src="${cover}" alt="" decoding="async">`:`<div class="collection-hero-empty">✦</div>`;
   collectionHeroEmoji.textContent=c.emoji||"📸";
   collectionDetailTitle.textContent=c.name||"Untitled";
   const subBits=[`${items.length} ${items.length===1?"item":"items"}`,`Created ${formatDate(c.createdAtClient)}`];
@@ -4942,12 +5020,11 @@ function renderCollectionDetail(){
     el.style.animationDelay=Math.min(i*40,400)+"ms";
     el.dataset.itemKey=it.key;
     const typeLabel=it.type==="reel"?"Reel":it.type==="post"?"Post":"Media";
+    const thumb=imgUrl(it.imageUrl, 500);
     el.innerHTML=`
-      <img src="${it.imageUrl}" alt="" loading="lazy">
-      <span class="collection-item-type">${typeLabel}</span>
-      ${isOwner?`<button class="collection-item-remove" data-act="remove" type="button" aria-label="Remove">×</button>`:""}`;
+      <img src="${thumb}" alt="" loading="lazy" decoding="async">
+      <span class="collection-item-type">${typeLabel}</span>`;
     el.addEventListener("click",(e)=>{
-      if(e.target.closest("[data-act='remove']"))return;
       if(it.type==="reel"){ goToReel(it.refId); }
       else if(it.type==="photo"){
         const p=photosCache.find(p=>p.id===it.refId);
@@ -4956,24 +5033,6 @@ function renderCollectionDetail(){
     });
     collectionItemsGrid.appendChild(el);
   });
-  collectionItemsGrid.querySelectorAll("[data-act='remove']").forEach(btn=>{
-    btn.addEventListener("click",(e)=>{
-      e.stopPropagation();
-      const itemEl=e.target.closest(".collection-item");
-      const key=itemEl?.dataset.itemKey;
-      if(key)removeItemFromCollection(c.id,key);
-    });
-  });
-}
-async function removeItemFromCollection(collectionId,itemKey){
-  const c=collectionsCache.find(x=>x.id===collectionId);if(!c)return;
-  if(c.ownerUid!==currentUid())return;
-  const updates={};
-  updates[`collections/${collectionId}/items/${itemKey}`]=null;
-  if(c.coverItemKey===itemKey)updates[`collections/${collectionId}/coverItemKey`]=null;
-  updates[`collections/${collectionId}/updatedAt`]=Date.now();
-  try{await update(dbRef(rtdb),updates);toast("Item removed","success");}
-  catch(err){toast("Couldn't remove: "+err.message,"error");}
 }
 function openCollectionModal({mode,collectionId=null}){
   cmEditMode=mode==="edit";
@@ -5030,7 +5089,7 @@ function renderCoverPicker(existing){
     const b=document.createElement("button");
     b.type="button";
     b.className="cover-opt"+(it.key===cmCoverItemKey?" selected":"");
-    b.innerHTML=`<img src="${it.imageUrl}" alt="">`;
+    b.innerHTML=`<img src="${imgUrl(it.imageUrl,300)}" alt="" loading="lazy" decoding="async">`;
     b.addEventListener("click",()=>{
       cmCoverItemKey=it.key;
       cmCoverPicker.querySelectorAll(".cover-opt").forEach(x=>x.classList.toggle("selected",x===b));
@@ -5096,11 +5155,11 @@ function renderPickerItems(){
   if(pickerTab==="photos"){
     source=photosCache.map(p=>({
       type:"photo", refId:p.id,
-      imageUrl:p.type==="video"?(p.thumbUrl||reelThumb(p.url)):p.url,
+      imageUrl:p.type==="video"?(p.thumbUrl||reelThumb(p.url, 200, 250)):imgUrl(p.url, 200),
       label:p.title||"Media"
     }));
   }else if(pickerTab==="reels"){
-    source=reelsCache.map(r=>({type:"reel",refId:r.id,imageUrl:reelThumb(r.videoUrl),label:(r.caption||"Reel").slice(0,40)}));
+    source=reelsCache.map(r=>({type:"reel",refId:r.id,imageUrl:reelThumb(r.videoUrl, 200, 250),label:(r.caption||"Reel").slice(0,40)}));
   }
   if(!source.length){pickerGrid.innerHTML=`<div class="picker-empty">Nothing here yet.</div>`;return;}
   source.forEach(it=>{
@@ -5109,7 +5168,7 @@ function renderPickerItems(){
     const el=document.createElement("div");
     el.className="picker-item"+(pickerSelection.has(key)?" selected":"");
     el.title=it.label;
-    el.innerHTML=`<img src="${it.imageUrl}" alt="" loading="lazy">`;
+    el.innerHTML=`<img src="${it.imageUrl}" alt="" loading="lazy" decoding="async">`;
     if(alreadyIn){
       el.style.opacity=".35";el.style.pointerEvents="none";el.title="Already in this collection";
     }else{
@@ -5143,11 +5202,11 @@ pickerConf.addEventListener("click",async()=>{
     let imageUrl=null;
     if(type==="photo"){
       const p=photosCache.find(p=>p.id===refId);
-      if(p) imageUrl = p.type==="video" ? (p.thumbUrl||reelThumb(p.url)) : p.url;
+      if(p) imageUrl = p.type==="video" ? (p.thumbUrl||reelThumb(p.url, 500, 625)) : imgUrl(p.url, 500);
     }
     else if(type==="reel"){
       const r=reelsCache.find(r=>r.id===refId);
-      imageUrl=reelThumb(r?.videoUrl);
+      imageUrl=reelThumb(r?.videoUrl, 500, 625);
     }
     if(!imageUrl)return;
     patches[`collections/${collectionId}/items/${key}`]={type,refId,imageUrl,addedAt:now+added,addedBy:me};
@@ -5172,9 +5231,7 @@ collectionAddItemsBtn.addEventListener("click",()=>{
   openPickerModal(activeCollectionId);
 });
 
-/* ══════════════════════════════════════════════════════════════
-   NOTES (private + shared)
-   ══════════════════════════════════════════════════════════════ */
+/* NOTES (private + shared) */
 function startNotes(){
   const uid = currentUid();
   if(!uid) return;
@@ -5244,18 +5301,18 @@ function renderNotes(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-6.5-8-12a8 8 0 1 1 16 0c0 5.5-8 12-8 12z"/><circle cx="12" cy="10" r="3"/></svg>
         ${escapeHtml(n.location.name)}
       </div>` : "";
+    const thumb = hasPhoto ? imgUrl(n.imageUrl, 500) : null;
     return `
       <div class="note-card${sharedCls}" data-note-id="${n.id}" data-note-shared="${n.shared}" style="animation-delay:${Math.min(i*40,360)}ms">
         <div class="note-card-actions">
           <button data-act="edit" type="button" aria-label="Edit">✎</button>
-          <button data-act="delete" class="danger" type="button" aria-label="Delete">×</button>
         </div>
         <div class="note-card-head">
           <div class="note-title">${escapeHtml(title)}</div>
           ${badge}
         </div>
         ${excerpt ? `<div class="note-excerpt">${escapeHtml(excerpt)}</div>` : ""}
-        ${hasPhoto ? `<div class="note-thumb"><img src="${n.imageUrl}" alt="" loading="lazy"></div>` : ""}
+        ${thumb ? `<div class="note-thumb"><img src="${thumb}" alt="" loading="lazy" decoding="async"></div>` : ""}
         ${loc}
         <div class="note-date">${escapeHtml(date)}</div>
       </div>`;
@@ -5269,7 +5326,6 @@ function renderNotes(){
       if(btn){
         e.stopPropagation();
         if(btn.dataset.act === "edit") openNoteModal({noteId:id, shared});
-        else if(btn.dataset.act === "delete") deleteNote(id, shared);
         return;
       }
       openNoteModal({noteId:id, shared});
@@ -5314,7 +5370,7 @@ function openNoteModal({noteId, shared}){
     if(src.imageUrl){
       pendingNoteExistingUrl = src.imageUrl;
       pendingNoteExistingPublicId = src.imagePublicId || null;
-      nmPhotoImg.src = src.imageUrl;
+      nmPhotoImg.src = imgUrl(src.imageUrl, 400);
       nmPhotoPreview.hidden = false;
       nmPhotoLabel.textContent = "Replace photo";
     }
@@ -5333,10 +5389,14 @@ function openNoteModal({noteId, shared}){
   setTimeout(()=>nmName.focus(),60);
 }
 nmPhotoBtn.addEventListener("click", () => notePhotoInput.click());
-notePhotoInput.addEventListener("change", () => {
-  const f = notePhotoInput.files[0];
+notePhotoInput.addEventListener("change", async () => {
+  let f = notePhotoInput.files[0];
   notePhotoInput.value = "";
-  if(!f || !f.type.startsWith("image/")) return;
+  if(!f) return;
+  if(!f.type.startsWith("image/") && !/\.(heic|heif)$/i.test(f.name)) return;
+  const converted = await prepareImageFile(f);
+  if(!converted) return;
+  f = converted;
   pendingNoteFile = f;
   if(pendingNoteUrl) URL.revokeObjectURL(pendingNoteUrl);
   pendingNoteUrl = URL.createObjectURL(f);
@@ -5488,19 +5548,6 @@ nmConfirm.addEventListener("click", async () => {
     nmConfirm.textContent = oldLabel;
   }
 });
-async function deleteNote(noteId, shared){
-  if(!confirm("Delete this note?")) return;
-  const uid = currentUid();
-  if(!uid) return;
-  try{
-    if(shared){
-      await remove(dbRef(rtdb, `sharedNotes/${noteId}`));
-    } else {
-      await remove(dbRef(rtdb, `notes/${uid}/${noteId}`));
-    }
-    toast("Note deleted","success");
-  }catch(err){ toast("Couldn't delete: "+err.message,"error"); }
-}
 
 /* MISC */
 document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseAllReelVideos();});
